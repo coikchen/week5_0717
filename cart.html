@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css' />
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3/dist/vue-loading.css" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
+  <title>Week 5 購物頁面</title>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <!-- loading 載入,不然會跳錯 -->
+    <loading :active.sync="isLoading"></loading>
+    <div class="main-container">
+      <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+          <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+          <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+          <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+        </ol>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img
+              src="https://images.unsplash.com/photo-1534766555764-ce878a5e3a2b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1050&q=80"
+              class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img
+              src="https://images.unsplash.com/photo-1579255139426-84ab54106ce4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1050&q=80"
+              class="d-block w-100" alt="...">
+          </div>
+          <div class="carousel-item">
+            <img
+              src="https://images.unsplash.com/photo-1590080875795-d1150371b9f3?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1051&q=80"
+              class="d-block w-100" alt="...">
+          </div>
+        </div>
+        <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="sr-only">Next</span>
+        </a>
+      </div>
+      <div class="row">
+        <div class="col-3 left_side_menu">
+          <h2>產品選單</h2>
+          <ul class="nav flex-column left_side_menu_form">
+            <li class="nav-item">
+              <a class="nav-link active" href="#">Active</a>
+            </li>
+          </ul>
+        </div>
+        <div class="col-9  right_side_product">
+          <h2>產品列表</h2>
+          <div class="row">
+            <div class="col-4 mt-2" v-for="item in products" :key="item.id">
+              <div class="card">
+                <div style="height: 150px; background-size: cover; background-position: center"
+                  :style="{backgroundImage: `url(${item.imageUrl[0]})`}"></div>
+                <div class="card-body">
+                  <h5 class="card-title">{{item.title}}</h5>
+                  <span>{{item.category}}</span>
+                  <p class="card-text">{{item.content}}</p>
+                  <del>{{item.origin_price |money }}</del>
+                  <span>{{item.price |money }}</span>
+                </div>
+                <div class="btn float-right">
+                  <button type="button" class="btn btn-primary btn-sm" v-on:click="getProduct(item.id)">
+                    <i v-if="status.loadingItem === item.id" class="spinner-grow spinner-grow-sm"></i>了解更多</button>
+                  <button type="button" class="btn btn-secondary btn-sm" @click="addToCart(item.id)">
+                    <i v-if="status.loadingItem === item.id" class="spinner-grow spinner-grow-sm"></i>
+                    加入購物車</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- top 選單跟banner end-->
+    <!-- Modal More....的 -->
+    <div class="modal" tabindex="-1" role="dialog" id="productModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{tempProduct.title}}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>{{tempProduct.description}}</p>
+            <div class="input-group mb-3">
+              <select class="custom-select" id="inputGroupSelect01" v-model="tempProduct.num">
+                <option selected>份數</option>
+                <!-- 數字呈現部分也是要用{{num}} -->
+                <option v-for=" num in 5" :key="num" :value="num">選擇{{num}} {{tempProduct.unit}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="text-muted text-nowrap mr-3" v-if=tempProduct.num>
+              小計
+              <strong>{{ tempProduct.num  * tempProduct.price |money }}</strong> 元
+            </div>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">我想反悔</button>
+            <button type="button" class="btn btn-primary"
+              @click="addToCart(tempProduct.id,tempProduct.num)">加入購物車</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal More....的  end-->
+    <!-- 購物車 -->
+    <div class="row">
+      <div class="my-3 col-9 offset-3">
+        <div class="removeAll float-right mb-2"><button type="button" class="btn btn-outline-danger"
+            @click="removeAll()">移除全部選項</button>
+        </div>
+        <table class="table">
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">刪除</th>
+              <th scope="col">品名</th>
+              <th scope="col">數量</th>
+              <th scope="col">單位</th>
+              <th scope="col">單價</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 購物車裡面的產品，不是產品列表 所以要寫item in carts  -->
+            <tr v-for="item in carts" :key="item.id">
+              <td @click="removeSingleOne(item.product.id)"><i class="fa fa-trash-o fa-2x text-danger"
+                  aria-hidden="true"></i></td>
+              <td>{{item.product.title }}</td>
+              <td width="150px">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <button type="button" class="btn btn-outline-primary" :disable="item.quantity === 1"
+                      @click="item.quantity ++;updatedQuantity(item.product.id, item.quantity)">+</button>
+                  </div>
+                  <input type="number" class="form-control text-center" v-model="item.quantity" min="1">
+                  <div class="input-group-prepend">
+                    <button type="button" class="btn btn-outline-primary"
+                      @click="item.quantity -- ;updatedQuantity(item.product.id, item.quantity)"> - </button>
+                  </div>
+                </div>
+              </td>
+              <td>{{item.product.unit}}</td>
+              <td>{{item.product.price | money}}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-right">總計</td>
+              <td>{{cartTotal | money}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div> <!-- my3 end-->
+    </div>
+    <!-- 購物車 end-->
+
+    <!-- 表單區塊 -->
+    <div class="my-5 row justify-content-center ">
+      <div class="my-3 col-9 offset-3"> 
+        <Validation-Observer v-slot="{ invalid ,classes}">
+          <form @submit.prevent="doneOrder">
+            <!-- 姓名 -->
+            <div class="form-group">
+              <validation-provider rules="required" v-slot="{ errors , classes}">
+                <label for="name">姓名</label>
+                <input id="name" v-model="form.name" type="text" :class="classes" class="form-control"/>
+                <span>{{ errors[0] }}</span>
+              </validation-provider>
+            </div>
+
+            <!-- E-mail -->
+            <div class="form-group">
+              <validation-provider rules="email|required" v-slot="{ errors , classes }">
+                <label for="email">E-mail </label>
+                <input id="email" v-model="form.email" type="email" :class="classes" class="form-control"/>
+                <span>{{ errors[0] }}</span>
+              </validation-provider>
+            </div>
+
+            <!-- 電話 -->
+            <div class="form-group">
+              <validation-provider rules="required|min:8|numeric" v-slot="{ errors , classes }">
+                <label for="tel">聯絡電話</label>
+                <input id="tel" v-model="form.tel" type="tel" :class="classes" class="form-control"/>
+                <span>{{ errors[0] }}</span>
+              </validation-provider>
+            </div>
+
+            <!-- 地址 -->
+            <div class="form-group">
+              <validation-provider rules="required" v-slot="{ errors , classes }">
+                <label for="address">收件地址</label>
+                <input id="address" v-model="form.address" type="text" class="form-control" :class="classes" />
+                <span v-if="errors[0]" class="text-danger">{{ errors[0] }}</span>
+              </validation-provider>
+            </div>
+            <!-- 付款方式：WebATM、ATM、Barcode、Credit、ApplePay、GooglePay -->
+            <div class="form-group">
+              <validation-provider rules="required" v-slot="{ errors , classes }">
+                <label for="payment">付款方式</label>
+                <select v-model="form.payment" class="form-control" required>
+                  <option value="WebATM">WebATM</option>
+                  <option value="ATM">ATM</option>
+                  <option value="Barcode">Barcode</option>
+                  <option value="Credit">Credit</option>
+                  <option value="ApplePay">ApplePay</option>
+                  <option value="GooglePay">GooglePay</option>
+                </select>
+              </validation-provider>
+            </div>
+
+            <!-- 留言 -->
+            <div class="form-group">
+              <validation-provider rules=" " v-slot="{ errors , classes }">
+                <label for="message">留言</label>
+                <textarea id="message" class="form-control" v-model="form.message" placeholder=""
+                  :class="classes"> </textarea>
+              </validation-provider>
+            </div>
+            <div class="text-right">
+              <button type="submit" class="btn btn-outline-success" :disabled="invalid">表單送出</button>
+            </div>
+          </form>
+        </Validation-Observer>
+      </div>
+    </div>
+
+    <!-- Modal 完成訂單 -->
+    <div class="modal" tabindex="-1" role="dialog" id="ordersModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">完成訂單</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>感謝您的訂購</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- Modal 完成訂單 end-->
+  </div> <!-- #app -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous">
+  </script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous">
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-loading-overlay@3"></script>
+  <!-- full 版本才有rules .... -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vee-validate/3.3.7/vee-validate.full.min.js'></script>
+
+  <script type="module" src="js/newall.js"></script>
+
+</body>
+
+</html>
